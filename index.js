@@ -27,7 +27,7 @@ async function run() {
 
     const toyCollection = client.db("toys-collection").collection("toy");
 
-   
+    // all toys section
     // get data from database to client side
     app.get("/toys", async (req, res) => {
       const { searchTerm } = req.query;
@@ -49,6 +49,14 @@ async function run() {
       res.send(toys);
     });
 
+    // get data by id from database to client side
+    app.get("/toysDetails/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const toy = await toyCollection.findOne(query);
+      res.send(toy);
+    });
+
     // post data to database from client side
     app.post("/toys", async (req, res) => {
       const newToy = req.body;
@@ -58,8 +66,21 @@ async function run() {
       res.json(result);
     });
 
-    // my toys section
+    // get categories and delete duplicate categories
+    app.get("/categories", async (req, res) => {
+      const toys = await toyCollection.find().toArray();
+      const categories = toys.map((toy) => toy.category);
+      const uniqueCategories = [...new Set(categories)];
+      res.send(uniqueCategories);
+    });
 
+    app.get("/toys/:category", async (req, res) => {
+      const category = req.params.category;
+      const toys = await toyCollection.find({ category: category }).toArray();
+      res.send(toys);
+    });
+
+    // my toys section
     // get data by email from database to client side
     app.get("/myToys/:email", async (req, res) => {
       const toys = await toyCollection
@@ -73,7 +94,7 @@ async function run() {
     // delete data from database from client side
     app.delete("/deleteToys/:id", async (req, res) => {
       const id = req.params.id;
-      const query = { _id: new ObjectId(id)  };
+      const query = { _id: new ObjectId(id) };
       const result = await toyCollection.deleteOne(query);
       console.log("Deleted toy", result);
       res.json(result);
@@ -94,6 +115,7 @@ async function run() {
       const result = await toyCollection.updateOne(query, updateDoc);
       res.status(200).send(result);
     });
+
     // shorting data from database from client side
     app.get("/myToys/:email/sortByPrice/:sortOrder", async (req, res) => {
       const email = req.params.email;
@@ -111,27 +133,11 @@ async function run() {
       }
     });
 
-    // get categories and delete duplicate categories
-    app.get("/categories", async (req, res) => {
-      const toys = await toyCollection.find().toArray();
-      const categories = toys.map((toy) => toy.category);
-      const uniqueCategories = [...new Set(categories)];
-      res.send(uniqueCategories);
-    });
-
-    app.get("/toys/:category", async (req, res) => {
-      const category = req.params.category;
-      const toys = await toyCollection.find({ category: category }).toArray();
-      res.send(toys);
-    });
-
-
-     // Send a ping to confirm a successful connection
-     await client.db("admin").command({ ping: 1 });
-     console.log(
-       "Pinged your deployment. You successfully connected to MongoDB!"
-     );
- 
+    // Send a ping to confirm a successful connection
+    await client.db("admin").command({ ping: 1 });
+    console.log(
+      "Pinged your deployment. You successfully connected to MongoDB!"
+    );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
